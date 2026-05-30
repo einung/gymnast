@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Gimnasia</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+    <div id="pantallaLogin" class="login-container">
+        <div class="login-box">
+            <h2>Club de Gimnasia Olímpica</h2>
+            <p>Inicia sesión para acceder al sistema</p>
+            <form id="formLogin">
+                <input type="text" id="loginUsuario" placeholder="Nombre de usuario" required>
+                <input type="password" id="loginContrasena" placeholder="Contraseña" required>
+                <button type="submit" class="btn-login">Ingresar al Sistema</button>
+            </form>
+            <p id="mensajeErrorLogin" class="error-texto" style="display:none;"></p>
+        </div>
+    </div>
+
+    <div id="pantallaSistema" class="container" style="display:none;">
+        <div class="header-sistema">
+            <h1>Gimnasia Olímpica - Control</h1>
+            <button onclick="cerrarSesion()" class="btn-cerrar-sesion">Cerrar Sesión 🚪</button>
+        </div>
+        
+        <div class="seccion">
+            <h2>Registrar Nueva Alumna</h2>
+            <form id="formAlumna">
+                <input type="text" id="nombre" placeholder="Nombre completo de la alumna" required>
+                <input type="number" id="edad" placeholder="Edad" required>
+                <input type="text" id="tutor" placeholder="Nombre del tutor" required>
+                <button type="submit">Registrar Alumna</button>
+            </form>
+        </div>
+
+        <div class="seccion-doble">
+            <div>
+                <h2>Alumnas</h2>
+                <ul id="listaAlumnas"></ul>
+            </div>
+            
+            <div id="panelControlPagos" style="display:none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2 style="margin: 0;">Historial y Pagos de: <span id="nombreAlumnaSeleccionada"></span></h2>
+                    <button onclick="eliminarAlumnaActual()" style="background-color: #e74c3c; color: white; width: auto; padding: 6px 12px; font-size: 13px; margin: 0; border: none; border-radius: 4px; cursor: pointer;">⚠️ Borrar Alumna</button>
+                </div>
+                
+                <form id="formPago">
+                    <input type="hidden" id="idAlumnaPago">
+                    <input type="number" id="montoPago" placeholder="Monto ($)" value="500" required>
+                    <input type="text" id="motivoPago" value="Mensualidad" required>
+                    <button type="submit">Registrar Pago y Ver Recibo</button>
+                </form>
+
+                <h3>Historial</h3>
+                <ul id="listaPagos"></ul>
+            </div>
+        </div>
+
+        <div class="seccion" style="margin-top: 20px;">
+            <h2>Historial Mensual General</h2>
+            <div class="filtro-mes">
+                <label for="seleccionarMes">Mes: </label>
+                <select id="seleccionarMes" onchange="cargarHistorialGeneral()">
+                    <option value="1">Enero</option>
+                    <option value="2">Febrero</option>
+                    <option value="3">Marzo</option>
+                    <option value="4">Abril</option>
+                    <option value="5">Mayo</option>
+                    <option value="6">Junio</option>
+                    <option value="7">Julio</option>
+                    <option value="8">Agosto</option>
+                    <option value="9">Septiembre</option>
+                    <option value="10">Octubre</option>
+                    <option value="11">Noviembre</option>
+                    <option value="12">Diciembre</option>
+                </select>
+
+                <label for="seleccionarAnio" style="margin-left: 10px;">Año: </label>
+                <select id="seleccionarAnio" onchange="cargarHistorialGeneral()">
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                </select>
+            </div>
+            
+            <div class="reporte-caja">
+                <h3>Total Recaudado: <span id="totalMensualGeneral" style="color: #27ae60;">$0</span></h3>
+                <p>Total de pagos recibidos: <span id="cantidadPagosGeneral">0</span></p>
+            </div>
+
+            <h3>Desglose de Pagos</h3>
+            <ul id="listaPagosGeneral" class="lista-reporte"></ul>
+        </div>
+    </div>
+
+    <div id="modalRecibo" class="modal" style="display:none;">
+        <div class="modal-content">
+            <div id="reciboDiseño" class="recibo-box">
+                <div class="recibo-header">
+                    <h3>RECIBO DE PAGO</h3>
+                    <p>Club de Gimnasia Olímpica</p>
+                </div>
+                <hr>
+                <div class="recibo-body">
+                    <p><strong>Fecha:</strong> <span id="reciboFecha"></span></p>
+                    <p><strong>Alumna:</strong> <span id="reciboAlumna"></span></p>
+                    <p><strong>Tutor:</strong> <span id="reciboTutor"></span></p>
+                    <p><strong>Concepto:</strong> <span id="reciboConcepto"></span></p>
+                    <h2 class="recibo-monto">Total: $<span id="reciboMonto"></span></h2>
+                </div>
+                <div class="recibo-footer">
+                    <p>¡Gracias por su pago!</p>
+                </div>
+            </div>
+            
+            <div class="modal-botones">
+                <button id="btnWhatsapp" class="btn-whatsapp">🚀 Abrir WhatsApp y Pegar Recibo</button>
+                <button onclick="cerrarModal()" class="btn-cerrar">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
