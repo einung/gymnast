@@ -56,21 +56,51 @@ app.get('/api/alumnas', (request, response) => {
     });
 });
 
+// 3. Eliminar Alumna y sus pagos asociados
+app.delete('/api/alumnas/:id', (request, response) => {
+    const idAlumna = request.params.id;
+    dbAlumnas.remove({ _id: idAlumna }, {}, (err, numRemoved) => {
+        if (err) {
+            response.json({ status: 'error', message: 'No se pudo eliminar la alumna' });
+            return;
+        }
+        dbPagos.remove({ alumnaId: idAlumna }, { multi: true }, (errPagos, numPagosRemoved) => {
+            response.json({ status: 'success' });
+        });
+    });
+});
+
 // --- RUTAS DE PAGOS ---
 
-// 3. Registrar Pago
+// 4. Registrar Pago
 app.post('/api/pagos', (request, response) => {
     const data = request.body;
+    // Agregar fecha automática en formato DD/MM/AAAA si no viene una
+    if (!data.fecha) {
+        const hoy = new Date();
+        data.fecha = `${hoy.getDate()}/${hoy.getMonth() + 1}/${hoy.getFullYear()}`;
+    }
     dbPagos.insert(data, (err, newDoc) => {
         if (err) {
             response.json({ status: 'error', message: 'No se pudo registrar el pago' });
             return;
         }
-        response.json({ status: 'success', data: newDoc });
+        response.json({ status: 'success', pago: newDoc });
     });
 });
 
-// 4. Obtener Pagos de una Alumna
+// 5. Obtener Pagos del Historial General
+app.get('/api/pagos-general', (request, response) => {
+    dbPagos.find({}, (err, data) => {
+        if (err) {
+            response.json({ status: 'error', message: 'No se pudieron cargar los pagos generales' });
+            return;
+        }
+        response.json({ status: 'success', data: data });
+    });
+});
+
+// 6. Obtener Pagos de una Alumna Específica
 app.get('/api/pagos/:alumnaId', (request, response) => {
     const alumnaId = request.params.alumnaId;
     dbPagos.find({ alumnaId: alumnaId }, (err, data) => {

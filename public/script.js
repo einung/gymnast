@@ -48,7 +48,6 @@ function cerrarSesion() {
     verificarSesion();
 }
 
-
 // --- CONTROL DEL SISTEMA DE GIMNASIA ---
 
 // Registrar Alumna
@@ -73,12 +72,12 @@ document.getElementById('formAlumna').addEventListener('submit', async (e) => {
 // Cargar Alumnas
 async function actualizarListaAlumnas() {
     const response = await fetch('/api/alumnas');
-    const data = await response.json();
+    const json = await response.json();
     const lista = document.getElementById('listaAlumnas');
-    if (!lista) return;
+    if (!lista || json.status !== 'success') return;
     lista.innerHTML = '';
     
-    data.forEach(alumna => {
+    json.data.forEach(alumna => {
         const li = document.createElement('li');
         li.textContent = `${alumna.nombre} (Tutor: ${alumna.tutor})`;
         li.onclick = () => seleccionarAlumna(alumna);
@@ -94,11 +93,11 @@ function seleccionarAlumna(alumna) {
     document.getElementById('idAlumnaPago').value = alumna._id;
     actualizarListaPagos(alumna._id);
 }
-// Función para eliminar a la alumna seleccionada y todo su historial
+
+// Eliminar Alumna
 async function eliminarAlumnaActual() {
     if (!alumnaSeleccionada) return;
 
-    // Mensaje de advertencia para evitar accidentes
     const confirmar = confirm(`¿Estás COMPLETAMENTE segura de que deseas borrar a "${alumnaSeleccionada.nombre}"?\nEsta acción eliminará de forma PERMANENTE a la alumna y todo su historial de pagos.`);
 
     if (confirmar) {
@@ -110,12 +109,8 @@ async function eliminarAlumnaActual() {
 
         if (json.status === 'success') {
             alert('Alumna y pagos eliminados con éxito.');
-            
-            // Ocultar el panel de pagos ya que la alumna ya no existe
             document.getElementById('panelControlPagos').style.display = 'none';
             alumnaSeleccionada = null;
-
-            // Actualizar todas las listas de la pantalla en tiempo real
             actualizarListaAlumnas();
             cargarHistorialGeneral();
         } else {
@@ -123,6 +118,7 @@ async function eliminarAlumnaActual() {
         }
     }
 }
+
 // Registrar Pago
 document.getElementById('formPago').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -153,12 +149,12 @@ document.getElementById('formPago').addEventListener('submit', async (e) => {
 // Cargar Historial de Pagos Individual
 async function actualizarListaPagos(alumnaId) {
     const response = await fetch(`/api/pagos/${alumnaId}`);
-    const data = await response.json();
+    const json = await response.json();
     const lista = document.getElementById('listaPagos');
-    if (!lista) return;
+    if (!lista || json.status !== 'success') return;
     lista.innerHTML = '';
     
-    data.forEach(pago => {
+    json.data.forEach(pago => {
         const li = document.createElement('li');
         li.textContent = `${pago.fecha} - ${pago.motivo}: $${pago.monto}`;
         li.onclick = () => mostrarRecibo(pago);
@@ -166,7 +162,7 @@ async function actualizarListaPagos(alumnaId) {
     });
 }
 
-// Mostrar Ventana de Recibo y Copiar Automáticamente
+// Mostrar Recibo
 function mostrarRecibo(pago) {
     document.getElementById('reciboFecha').textContent = pago.fecha;
     document.getElementById('reciboAlumna').textContent = pago.alumnaNombre;
@@ -190,7 +186,7 @@ function mostrarRecibo(pago) {
         });
     }, 300);
 
-    const textoWhatsapp = encodeURIComponent(`¡Hola! Le comparto el recibo de mensualidad de ${pago.alumnaNombre}. (Presione Pegar/Ctrl+V para adjuntar la imagen aquí abajo)`);
+    const textoWhatsapp = encodeURIComponent(`¡Hola! Le comparto el recibo de mensualidad de ${pago.alumnaNombre}.`);
     document.getElementById('btnWhatsapp').onclick = () => {
         window.open(`https://api.whatsapp.com/send?text=${textoWhatsapp}`, '_blank');
     };
@@ -200,9 +196,7 @@ function cerrarModal() {
     document.getElementById('modalRecibo').style.display = 'none';
 }
 
-
-// --- LÓGICA PARA REPORTES MENSUALES GENERALES ---
-
+// --- LÓGICA REPORTES ---
 function configurarMesActual() {
     const fechaActual = new Date();
     const mesActual = fechaActual.getMonth() + 1; 
@@ -222,17 +216,18 @@ async function cargarHistorialGeneral() {
 
     const mesBuscado = document.getElementById('seleccionarMes').value;
     const anioBuscado = document.getElementById('seleccionarAnio').value;
-    
     const mesAnioFiltro = `${mesBuscado}/${anioBuscado}`.trim(); 
 
     const resPagos = await fetch('/api/pagos-general');
-    const todosLosPagos = await resPagos.json();
+    const jsonPagos = await resPagos.json();
 
     const resAlumnas = await fetch('/api/alumnas');
-    const todasLasAlumnas = await resAlumnas.json();
+    const jsonAlumnas = await resAlumnas.json();
+
+    if (jsonPagos.status !== 'success' || jsonAlumnas.status !== 'success') return;
 
     const mapaAlumnas = {};
-    todasLasAlumnas.forEach(a => { mapaAlumnas[a._id] = a; });
+    jsonAlumnas.data.forEach(a => { mapaAlumnas[a._id] = a; });
 
     const listaUI = document.getElementById('listaPagosGeneral');
     if (!listaUI) return;
@@ -241,7 +236,7 @@ async function cargarHistorialGeneral() {
     let ingresosTotales = 0;
     let contadorPagos = 0;
 
-    todosLosPagos.forEach(pago => {
+    jsonPagos.data.forEach(pago => {
         const fechaLimpia = pago.fecha.replace(/\s+/g, '');
         const partes = fechaLimpia.split('/');
         
@@ -262,7 +257,7 @@ async function cargarHistorialGeneral() {
 
                 nombreAlumna = nombreAlumna || "Alumna no identificada";
                 nombreTutor = nombreTutor || "N/A";
-                const motivoPago = pago.motivo || "Mensualidad"; // <-- CORREGIDO AQUÍ
+                const motivoPago = pago.motivo || "Mensualidad";
 
                 const li = document.createElement('li');
                 li.style.padding = "10px";
@@ -277,5 +272,4 @@ async function cargarHistorialGeneral() {
     document.getElementById('cantidadPagosGeneral').textContent = contadorPagos;
 }
 
-// REVISIÓN AL INICIAR LA PÁGINA
-verificarSesion();0
+verificarSesion();
