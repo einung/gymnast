@@ -1,4 +1,33 @@
-let alumnaSeleccionada = null;
+
+async function registrarAlumnaManual() {
+    const nombre = document.getElementById('nombre').value;
+    const edad = document.getElementById('edad').value;
+    const tutor = document.getElementById('tutor').value;
+
+    if (!nombre || !edad || !tutor) {
+        alert("Por favor, llena todos los campos obligatorios.");
+        return;
+    }
+
+    const response = await fetch('/api/alumnas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, edad, tutor })
+    });
+    
+    const json = await response.json();
+    if (json.status === 'success') {
+        // Limpiar el formulario
+        document.getElementById('nombre').value = '';
+        document.getElementById('edad').value = '';
+        document.getElementById('tutor').value = '';
+        // Refrescar la lista
+        actualizarListaAlumnas();
+        alert("¡Alumna registrada con éxito!");
+    } else {
+        alert("Error al guardar: " + json.message);
+    }
+}let alumnaSeleccionada = null;
 
 // --- CONTROL DE LOGIN ---
 const formLogin = document.getElementById('formLogin');
