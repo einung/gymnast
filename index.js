@@ -14,8 +14,8 @@ app.use(express.json({ limit: '1mb' }));
 const USUARIO_ADMIN = "admin";
 const CONTRASENA_ADMIN = "gimnasia2026";
 
-// --- CONFIGURACIÓN DE LA BASE DE DATOS LIMPIA ---
-// Al quitar las rutas largas evitaremos los errores de permisos en Render
+// --- CONFIGURACIÓN DE LA BASE DE DATOS LOCAL ---
+// Guardando directamente en la raíz evitamos bloqueos de carpetas en Render
 const dbAlumnas = new Datastore({ filename: 'alumnas.db', autoload: true });
 const dbPagos = new Datastore({ filename: 'pagos.db', autoload: true });
 
@@ -73,7 +73,6 @@ app.delete('/api/alumnas/:id', (request, response) => {
 // 4. Registrar Pago
 app.post('/api/pagos', (request, response) => {
     const data = request.body;
-    // Agregar fecha automática en formato DD/MM/AAAA si no viene una
     if (!data.fecha) {
         const hoy = new Date();
         data.fecha = `${hoy.getDate()}/${hoy.getMonth() + 1}/${hoy.getFullYear()}`;
