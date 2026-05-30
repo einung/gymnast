@@ -1,33 +1,4 @@
-
-async function registrarAlumnaManual() {
-    const nombre = document.getElementById('nombre').value;
-    const edad = document.getElementById('edad').value;
-    const tutor = document.getElementById('tutor').value;
-
-    if (!nombre || !edad || !tutor) {
-        alert("Por favor, llena todos los campos obligatorios.");
-        return;
-    }
-
-    const response = await fetch('/api/alumnas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre, edad, tutor })
-    });
-    
-    const json = await response.json();
-    if (json.status === 'success') {
-        // Limpiar el formulario
-        document.getElementById('nombre').value = '';
-        document.getElementById('edad').value = '';
-        document.getElementById('tutor').value = '';
-        // Refrescar la lista
-        actualizarListaAlumnas();
-        alert("¡Alumna registrada con éxito!");
-    } else {
-        alert("Error al guardar: " + json.message);
-    }
-}let alumnaSeleccionada = null;
+let alumnaSeleccionada = null;
 
 // --- CONTROL DE LOGIN ---
 const formLogin = document.getElementById('formLogin');
@@ -79,8 +50,8 @@ function cerrarSesion() {
 
 // --- CONTROL DEL SISTEMA DE GIMNASIA ---
 
-// Registrar Alumna
-document.getElementById('formAlumna').addEventListener('submit', async (e) => {
+// Registrar Alumna (Función Directa)
+async function registrarAlumnaManual(e) {
     e.preventDefault();
     const nombre = document.getElementById('nombre').value;
     const edad = document.getElementById('edad').value;
@@ -91,12 +62,16 @@ document.getElementById('formAlumna').addEventListener('submit', async (e) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre, edad, tutor })
     });
+    
     const json = await response.json();
     if(json.status === 'success') {
         document.getElementById('formAlumna').reset();
         actualizarListaAlumnas();
+        alert("¡Alumna registrada con éxito!");
+    } else {
+        alert("Error del servidor: " + json.message);
     }
-});
+}
 
 // Cargar Alumnas
 async function actualizarListaAlumnas() {
@@ -127,53 +102,52 @@ function seleccionarAlumna(alumna) {
 async function eliminarAlumnaActual() {
     if (!alumnaSeleccionada) return;
 
-    const confirmar = confirm(`¿Estás COMPLETAMENTE segura de que deseas borrar a "${alumnaSeleccionada.nombre}"?\nEsta acción eliminará de forma PERMANENTE a la alumna y todo su historial de pagos.`);
+    const confirmar = confirm(`¿Estás COMPLETAMENTE segura de que deseas borrar a "${alumnaSeleccionada.nombre}"?\nEsta acción la eliminará permanentemente.`);
 
     if (confirmar) {
         const response = await fetch(`/api/alumnas/${alumnaSeleccionada._id}`, {
             method: 'DELETE'
         });
-
         const json = await response.json();
-
         if (json.status === 'success') {
-            alert('Alumna y pagos eliminados con éxito.');
+            alert('Alumna eliminada.');
             document.getElementById('panelControlPagos').style.display = 'none';
             alumnaSeleccionada = null;
             actualizarListaAlumnas();
             cargarHistorialGeneral();
-        } else {
-            alert('Hubo un error al intentar eliminar: ' + json.message);
         }
     }
 }
 
 // Registrar Pago
-document.getElementById('formPago').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const alumnaId = document.getElementById('idAlumnaPago').value;
-    const monto = document.getElementById('montoPago').value;
-    const motivo = document.getElementById('motivoPago').value;
+const formPago = document.getElementById('formPago');
+if (formPago) {
+    formPago.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const alumnaId = document.getElementById('idAlumnaPago').value;
+        const monto = document.getElementById('montoPago').value;
+        const motivo = document.getElementById('motivoPago').value;
 
-    const response = await fetch('/api/pagos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-            alumnaId, 
-            monto, 
-            motivo, 
-            alumnaNombre: alumnaSeleccionada.nombre, 
-            tutorNombre: alumnaSeleccionada.tutor 
-        })
+        const response = await fetch('/api/pagos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                alumnaId, 
+                monto, 
+                motivo, 
+                alumnaNombre: alumnaSeleccionada.nombre, 
+                tutorNombre: alumnaSeleccionada.tutor 
+            })
+        });
+        
+        const json = await response.json();
+        if(json.status === 'success') {
+            actualizarListaPagos(alumnaId);
+            mostrarRecibo(json.pago);
+            cargarHistorialGeneral(); 
+        }
     });
-    
-    const json = await response.json();
-    if(json.status === 'success') {
-        actualizarListaPagos(alumnaId);
-        mostrarRecibo(json.pago);
-        cargarHistorialGeneral(); 
-    }
-});
+}
 
 // Cargar Historial de Pagos Individual
 async function actualizarListaPagos(alumnaId) {
@@ -207,10 +181,8 @@ function mostrarRecibo(pago) {
             canvas.toBlob(blob => {
                 const item = new ClipboardItem({ "image/png": blob });
                 navigator.clipboard.write([item]).then(() => {
-                    console.log("¡Recibo copiado automáticamente!");
-                }).catch(err => {
-                    console.error("Error al copiar: ", err);
-                });
+                    console.log("¡Recibo copiado!");
+                }).catch(err => console.error(err));
             });
         });
     }, 300);
@@ -242,7 +214,6 @@ function configurarMesActual() {
 
 async function cargarHistorialGeneral() {
     configurarMesActual();
-
     const mesBuscado = document.getElementById('seleccionarMes').value;
     const anioBuscado = document.getElementById('seleccionarAnio').value;
     const mesAnioFiltro = `${mesBuscado}/${anioBuscado}`.trim(); 
@@ -276,22 +247,13 @@ async function cargarHistorialGeneral() {
                 ingresosTotales += parseFloat(pago.monto);
                 contadorPagos++;
 
-                let nombreAlumna = pago.alumnaNombre;
-                let nombreTutor = pago.tutorNombre;
-
-                if (!nombreAlumna && mapaAlumnas[pago.alumnaId]) {
-                    nombreAlumna = mapaAlumnas[pago.alumnaId].nombre;
-                    nombreTutor = mapaAlumnas[pago.alumnaId].tutor;
-                }
-
-                nombreAlumna = nombreAlumna || "Alumna no identificada";
-                nombreTutor = nombreTutor || "N/A";
-                const motivoPago = pago.motivo || "Mensualidad";
+                let nombreAlumna = pago.alumnaNombre || (mapaAlumnas[pago.alumnaId] ? mapaAlumnas[pago.alumnaId].nombre : "Alumna no identificada");
+                let nombreTutor = pago.tutorNombre || (mapaAlumnas[pago.alumnaId] ? mapaAlumnas[pago.alumnaId].tutor : "N/A");
 
                 const li = document.createElement('li');
                 li.style.padding = "10px";
                 li.style.borderBottom = "1px solid #eee";
-                li.innerHTML = `<strong>${pago.fecha}</strong> - Alumna: ${nombreAlumna} | Tutor: ${nombreTutor} | Concepto: ${motivoPago} - <span style="color:#27ae60; font-weight:bold;">$${pago.monto}</span>`;
+                li.innerHTML = `<strong>${pago.fecha}</strong> - Alumna: ${nombreAlumna} | Tutor: ${nombreTutor} - <span style="color:#27ae60; font-weight:bold;">$${pago.monto}</span>`;
                 listaUI.appendChild(li);
             }
         }
