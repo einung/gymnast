@@ -14,12 +14,10 @@ app.use(express.json({ limit: '1mb' }));
 const USUARIO_ADMIN = "admin";
 const CONTRASENA_ADMIN = "gimnasia2026";
 
-// Configuración adaptable para la base de datos en la nube o local
-const rutaAlumnas = process.env.RENDER ? '/opt/render/project/src/alumnas.db' : 'alumnas.db';
-const rutaPagos = process.env.RENDER ? '/opt/render/project/src/pagos.db' : 'pagos.db';
-
-const dbAlumnas = new Datastore({ filename: rutaAlumnas, autoload: true });
-const dbPagos = new Datastore({ filename: rutaPagos, autoload: true });
+// --- CONFIGURACIÓN DE LA BASE DE DATOS LIMPIA ---
+// Al quitar las rutas largas evitaremos los errores de permisos en Render
+const dbAlumnas = new Datastore({ filename: 'alumnas.db', autoload: true });
+const dbPagos = new Datastore({ filename: 'pagos.db', autoload: true });
 
 // RUTA DE LOGIN
 app.post('/api/login', (request, response) => {
