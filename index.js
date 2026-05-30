@@ -4,7 +4,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.listen(port, () => {
-    console.log(`Servidor corriendo en http://localhost:${port}`);
+    console.log(`Servidor corriendo en el puerto ${port}`);
 });
 
 app.use(express.static('public'));
@@ -14,11 +14,12 @@ app.use(express.json({ limit: '1mb' }));
 const USUARIO_ADMIN = "admin";
 const CONTRASENA_ADMIN = "gimnasia2026";
 
-// Bases de datos locales
-const dbAlumnas = new Datastore('alumnas.db');
-const dbPagos = new Datastore('pagos.db');
-dbAlumnas.loadDatabase();
-dbPagos.loadDatabase();
+// Configuración adaptable para la base de datos en la nube o local
+const rutaAlumnas = process.env.RENDER ? '/opt/render/project/src/alumnas.db' : 'alumnas.db';
+const rutaPagos = process.env.RENDER ? '/opt/render/project/src/pagos.db' : 'pagos.db';
+
+const dbAlumnas = new Datastore({ filename: rutaAlumnas, autoload: true });
+const dbPagos = new Datastore({ filename: rutaPagos, autoload: true });
 
 // RUTA DE LOGIN
 app.post('/api/login', (request, response) => {
@@ -35,68 +36,48 @@ app.post('/api/login', (request, response) => {
 // 1. Guardar Alumna
 app.post('/api/alumnas', (request, response) => {
     const data = request.body;
-    data.timestamp = Date.now();
     dbAlumnas.insert(data, (err, newDoc) => {
-        if (err) return response.status(500).json({ status: 'error' });
-        response.json({ status: 'success', alumna: newDoc });
+        if (err) {
+            response.json({ status: 'error', message: 'No se pudo guardar la alumna' });
+            return;
+        }
+        response.json({ status: 'success', data: newDoc });
     });
 });
 
-// 2. Obtener todas las Alumnas
+// 2. Obtener Alumnas
 app.get('/api/alumnas', (request, response) => {
     dbAlumnas.find({}, (err, data) => {
-        if (err) return response.end();
-        response.json(data);
-    });
-});
-
-// 3. BORRAR ALUMNA Y SUS PAGOS (REVISADA Y ASEGURADA)
-app.delete('/api/alumnas/:id', (request, response) => {
-    const idAlumna = request.params.id;
-
-    dbAlumnas.remove({ _id: idAlumna }, {}, (err, numRemoved) => {
         if (err) {
-            return response.status(500).json({ status: 'error', message: 'Error al borrar de la base de datos' });
+            response.json({ status: 'error', message: 'No se pudieron cargar las alumnas' });
+            return;
         }
-
-        // Borrar en cascada todos los pagos de esa alumna
-        dbPagos.remove({ alumnaId: idAlumna }, { multi: true }, (errPagos, numPagosRemoved) => {
-            if (errPagos) {
-                return response.status(500).json({ status: 'error', message: 'Se borró la alumna pero no sus pagos' });
-            }
-            response.json({ status: 'success', message: 'Alumna eliminada correctamente' });
-        });
+        response.json({ status: 'success', data: data });
     });
 });
-
 
 // --- RUTAS DE PAGOS ---
 
-// 1. Registrar un pago
+// 3. Registrar Pago
 app.post('/api/pagos', (request, response) => {
     const data = request.body;
-    data.fecha = new Date().toLocaleDateString('es-MX');
-    data.timestamp = Date.now();
-    
     dbPagos.insert(data, (err, newDoc) => {
-        if (err) return response.status(500).json({ status: 'error' });
-        response.json({ status: 'success', pago: newDoc });
+        if (err) {
+            response.json({ status: 'error', message: 'No se pudo registrar el pago' });
+            return;
+        }
+        response.json({ status: 'success', data: newDoc });
     });
 });
 
-// 2. Obtener historial individual
+// 4. Obtener Pagos de una Alumna
 app.get('/api/pagos/:alumnaId', (request, response) => {
     const alumnaId = request.params.alumnaId;
-    dbPagos.find({ alumnaId: alumnaId }).sort({ timestamp: -1 }).exec((err, data) => {
-        if (err) return response.end();
-        response.json(data);
-    });
-});
-
-// 3. Obtener todos los pagos del sistema
-app.get('/api/pagos-general', (request, response) => {
-    dbPagos.find({}).sort({ timestamp: -1 }).exec((err, data) => {
-        if (err) return response.end();
-        response.json(data);
+    dbPagos.find({ alumnaId: alumnaId }, (err, data) => {
+        if (err) {
+            response.json({ status: 'error', message: 'No se pudieron cargar los pagos' });
+            return;
+        }
+        response.json({ status: 'success', data: data });
     });
 });
