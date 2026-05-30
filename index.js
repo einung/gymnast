@@ -14,10 +14,24 @@ app.use(express.json({ limit: '1mb' }));
 const USUARIO_ADMIN = "admin";
 const CONTRASENA_ADMIN = "gimnasia2026";
 
-// --- CONFIGURACIÓN DE LA BASE DE DATOS LOCAL ---
-// Guardando directamente en la raíz evitamos bloqueos de carpetas en Render
+// --- CONFIGURACIÓN DE LA BASE DE DATOS ---
 const dbAlumnas = new Datastore({ filename: 'alumnas.db', autoload: true });
 const dbPagos = new Datastore({ filename: 'pagos.db', autoload: true });
+
+// 🚀 AUTALLENADO DE ALUMNAS (PLAN B)
+// Si la base de datos está vacía, metemos 3 alumnas de prueba automáticamente para que puedas trabajar
+dbAlumnas.count({}, (err, count) => {
+    if (!err && count === 0) {
+        const alumnasIniciales = [
+            { nombre: "Anna Sofia Flores Coronado", edad: "5", tutor: "Maria Isabel Gonzalez Lopez" },
+            { nombre: "Valeria Mia Agali", edad: "7", tutor: "Carlos Agali" },
+            { nombre: "Camila Einung", edad: "6", tutor: "Sara Einung" }
+        ];
+        dbAlumnas.insert(alumnasIniciales, (insertErr) => {
+            if (!insertErr) console.log("✨ Alumnas de prueba cargadas con éxito.");
+        });
+    }
+});
 
 // RUTA DE LOGIN
 app.post('/api/login', (request, response) => {
@@ -54,7 +68,7 @@ app.get('/api/alumnas', (request, response) => {
     });
 });
 
-// 3. Eliminar Alumna y sus pagos asociados
+// 3. Eliminar Alumna
 app.delete('/api/alumnas/:id', (request, response) => {
     const idAlumna = request.params.id;
     dbAlumnas.remove({ _id: idAlumna }, {}, (err, numRemoved) => {
