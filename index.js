@@ -14,10 +14,10 @@ app.use(express.json({ limit: '1mb' }));
 const USUARIO_ADMIN = "admin";
 const CONTRASENA_ADMIN = "gimnasia2026";
 
-// --- CONFIGURACIÓN DE LA BASE DE DATOS ---
-// Usamos nombres fijos directos en la raíz para evitar problemas de permisos en Render
-const dbAlumnas = new Datastore({ filename: 'alumnas.db', autoload: true });
-const dbPagos = new Datastore({ filename: 'pagos.db', autoload: true });
+// --- CONFIGURACIÓN DE LA BASE DE DATOS EN MEMORIA ---
+// Al no usar archivos físicos, evitamos por completo los bloqueos de permisos en Render
+const dbAlumnas = new Datastore({ inMemoryOnly: true });
+const dbPagos = new Datastore({ inMemoryOnly: true });
 
 // RUTA DE LOGIN
 app.post('/api/login', (request, response) => {
