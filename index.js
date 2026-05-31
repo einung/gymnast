@@ -34,15 +34,22 @@ app.post('/api/login', (request, response) => {
 // 1. Guardar Alumna
 app.post('/api/alumnas', (request, response) => {
     const data = request.body;
+    
+    // Validamos que los datos no lleguen vacíos antes de meterlos a la RAM
+    if (!data || !data.nombre) {
+        response.json({ status: 'error', message: 'Los datos de la alumna llegaron vacíos al servidor' });
+        return;
+    }
+
     dbAlumnas.insert(data, (err, newDoc) => {
         if (err) {
-            response.json({ status: 'error', message: 'No se pudo guardar la alumna en la base de datos' });
+            response.json({ status: 'error', message: err.message });
             return;
         }
+        // Si todo sale bien, respondemos éxito directo
         response.json({ status: 'success', data: newDoc });
     });
 });
-
 // 2. Obtener Alumnas
 app.get('/api/alumnas', (request, response) => {
     dbAlumnas.find({}, (err, data) => {
